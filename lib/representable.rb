@@ -111,6 +111,12 @@ private
       #   property :name, :class => Name
       #   property :name, :default => "Mike"
       def property(name, options={})
+        if !method_defined?(name) 
+          attr_reader name
+        end
+        if !method_defined?("#{name}=") 
+          attr_writer name
+        end
         representable_attrs << definition_class.new(name, options)
       end
       
