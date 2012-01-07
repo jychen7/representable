@@ -33,6 +33,15 @@ module Representable
       
       def self.included(base)
         base.representable_attrs.push(*representable_attrs) # "inherit".
+        new_instance = base.new
+        base.representable_attrs.each do |definition|
+          if !new_instance.respond_to?(definition.name) 
+            base.send :attr_reader, definition.name
+          end
+          if !new_instance.respond_to?("#{definition.name}=") 
+            base.send :attr_writer, definition.name
+          end
+        end
       end
       
       # Copies the representable_attrs to the extended object.
@@ -111,12 +120,6 @@ private
       #   property :name, :class => Name
       #   property :name, :default => "Mike"
       def property(name, options={})
-        if !method_defined?(name) 
-          attr_reader name
-        end
-        if !method_defined?("#{name}=") 
-          attr_writer name
-        end
         representable_attrs << definition_class.new(name, options)
       end
       
