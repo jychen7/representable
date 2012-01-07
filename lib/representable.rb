@@ -33,13 +33,15 @@ module Representable
       
       def self.included(base)
         base.representable_attrs.push(*representable_attrs) # "inherit".
-        new_instance = base.new
-        base.representable_attrs.each do |definition|
-          if !new_instance.respond_to?(definition.name) 
-            base.send :attr_reader, definition.name
-          end
-          if !new_instance.respond_to?("#{definition.name}=") 
-            base.send :attr_writer, definition.name
+        if base.respond_to? :new
+          new_instance = base.new
+          base.representable_attrs.each do |definition|
+            if !new_instance.respond_to?(definition.name) 
+              base.send :attr_reader, definition.name
+            end
+            if !new_instance.respond_to?("#{definition.name}=") 
+              base.send :attr_writer, definition.name
+            end
           end
         end
       end
