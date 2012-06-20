@@ -73,7 +73,10 @@ private
     representable_bindings_for(format).each do |bin|
       next if skip_property?(bin, options)
       
-      value = send(bin.definition.getter) || bin.definition.default # DISCUSS: eventually move back to Ref.
+      value = send(bin.definition.getter) 
+      if value.nil? 
+        value = bin.definition.default 
+      end
       bin.write(doc, value) if value
     end
     doc
