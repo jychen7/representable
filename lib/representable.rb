@@ -77,7 +77,7 @@ private
       if value.nil? 
         value = bin.definition.default 
       end
-      bin.write(doc, value) if value
+      bin.write(doc, value) 
     end
     doc
   end
