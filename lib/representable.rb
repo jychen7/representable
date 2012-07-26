@@ -36,7 +36,7 @@ module Representable
         if base.respond_to? :new
           new_instance = base.new
           base.representable_attrs.each do |definition|
-            return if definition.name.to_s == "id" && !new_instance.class.ancestors.any? {|an| an.to_s ==  "ActiveRecord::Base" }
+            return if definition.name.to_s == "id" && new_instance.class.ancestors.any? {|an| an.to_s ==  "ActiveRecord::Base" }
             if !new_instance.respond_to?(definition.name)
               base.send :attr_reader, definition.name
             end
