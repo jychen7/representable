@@ -36,12 +36,17 @@ module Representable
         if base.respond_to? :new
           new_instance = base.new
           base.representable_attrs.each do |definition|
-            return if definition.name.to_s == "id" && new_instance.class.ancestors.any? {|an| an.to_s ==  "ActiveRecord::Base" }
-            if !new_instance.respond_to?(definition.name)
-              base.send :attr_reader, definition.name
-            end
-            if !new_instance.respond_to?("#{definition.name}=")
-              base.send :attr_writer, definition.name
+            if definition.name.to_s == "id"
+              if !new_instance.class.ancestors.any? {|an| an.to_s ==  "ActiveRecord::Base" }
+                base.send :attr_accessor, :id
+              end
+            else
+              if !new_instance.respond_to?(definition.name)
+                base.send :attr_reader, definition.name
+              end
+              if !new_instance.respond_to?("#{definition.name}=")
+                base.send :attr_writer, definition.name
+              end
             end
           end
         end
@@ -68,7 +73,7 @@ module Representable
     self
   end
 
-private
+  private
   # Compiles the document going through all properties.
   def create_representation_with(doc, options, format, &block)
     representable_bindings_for(format).each do |bin|
@@ -165,12 +170,12 @@ private
       wrap
     end
 
-  private
+    private
     def infer_name_for(name)
       name.to_s.split('::').last.
-       gsub(/([A-Z]+)([A-Z][a-z])/,'\1_\2').
-       gsub(/([a-z\d])([A-Z])/,'\1_\2').
-       downcase
+        gsub(/([A-Z]+)([A-Z][a-z])/,'\1_\2').
+        gsub(/([a-z\d])([A-Z])/,'\1_\2').
+        downcase
     end
   end
 
