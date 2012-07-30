@@ -33,25 +33,13 @@ module Representable
 
       def self.included(base)
         base.representable_attrs.push(*representable_attrs) # "inherit".
+        define_methods(representable_attrs, base)
       end
 
       # Copies the representable_attrs to the extended object.
       def self.extended(object)
         attrs = representable_attrs
-        representable_attrs.each do |definition|
-          if definition.name.to_s == "id"
-            if !object.class.ancestors.any? {|an| an.to_s ==  "ActiveRecord::Base" }
-              object.class.send :attr_accessor, :id
-            end
-          else
-            if !object.respond_to?(definition.name)
-              object.class.send :attr_reader, definition.name
-            end
-            if !object.respond_to?("#{definition.name}=")
-              object.class.send :attr_writer, definition.name
-            end
-          end
-        end
+        define_methods(representable_attrs, object.class)
         object.instance_eval do
           @representable_attrs = attrs
         end
@@ -113,6 +101,25 @@ module Representable
     def create_represented(document, *args)
       new.tap do |represented|
         yield represented, *args if block_given?
+      end
+    end
+
+    def define_methods(representable_attrs, klass)
+      return if !klass.respond_to?(:new)
+      object = klass.new
+      representable_attrs.each do |definition|
+        if definition.name.to_s == "id"
+          if !klass.ancestors.any? {|an| an.to_s ==  "ActiveRecord::Base" }
+            klass.send :attr_accessor, :id
+          end
+        else
+          if !object.respond_to?(definition.name)
+            klass.send :attr_reader, definition.name
+          end
+          if !object.respond_to?("#{definition.name}=")
+            klass.send :attr_writer, definition.name
+          end
+        end
       end
     end
 

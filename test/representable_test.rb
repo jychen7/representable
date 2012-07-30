@@ -309,5 +309,43 @@ class RepresentableTest < MiniTest::Spec
       inst.from_hash "id" => 123
       assert_equal 123, inst.id
     end
+    module Base
+        include Representable::JSON
+        property :id
+    end
+
+    module Child
+      include Representable::JSON
+      include Base
+      property :name
+    end
+
+    it "should handle inherit correctly" do
+      inst = Object.new
+      inst.extend Child
+      inst.from_hash "id" => 123, "name" => "name"
+      assert_equal 123, inst.id
+      assert_equal "name", inst.name
+    end
+
+    it "should support include directtly" do
+      klass = Class.new do
+        include Representable::JSON
+        include Child
+      end
+      associate_presenter = Module.new do
+        include Representable::JSON
+        include Child
+        property :associate, :class => klass
+      end
+
+      inst = Object.new
+      inst.extend associate_presenter
+      inst.from_hash({"id" => 1, "name" => "name", "associate" => { "id" => 2, "name" => "name2" }})
+      assert_equal 1, inst.id
+      assert_equal "name", inst.name
+      assert_equal 2, inst.associate.id
+      assert_equal "name2", inst.associate.name
+    end
   end
 end
