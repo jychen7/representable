@@ -33,28 +33,25 @@ module Representable
 
       def self.included(base)
         base.representable_attrs.push(*representable_attrs) # "inherit".
-        if base.respond_to? :new
-          new_instance = base.new
-          base.representable_attrs.each do |definition|
-            if definition.name.to_s == "id"
-              if !new_instance.class.ancestors.any? {|an| an.to_s ==  "ActiveRecord::Base" }
-                base.send :attr_accessor, :id
-              end
-            else
-              if !new_instance.respond_to?(definition.name)
-                base.send :attr_reader, definition.name
-              end
-              if !new_instance.respond_to?("#{definition.name}=")
-                base.send :attr_writer, definition.name
-              end
-            end
-          end
-        end
       end
 
       # Copies the representable_attrs to the extended object.
       def self.extended(object)
         attrs = representable_attrs
+        representable_attrs.each do |definition|
+          if definition.name.to_s == "id"
+            if !object.class.ancestors.any? {|an| an.to_s ==  "ActiveRecord::Base" }
+              object.class.send :attr_accessor, :id
+            end
+          else
+            if !object.respond_to?(definition.name)
+              object.class.send :attr_reader, definition.name
+            end
+            if !object.respond_to?("#{definition.name}=")
+              object.class.send :attr_writer, definition.name
+            end
+          end
+        end
         object.instance_eval do
           @representable_attrs = attrs
         end
@@ -83,7 +80,9 @@ module Representable
       if value.nil?
         value = bin.definition.default
       end
-      bin.write(doc, value)
+      if !value.nil?
+        bin.write(doc, value)
+      end
     end
     doc
   end
