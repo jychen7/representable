@@ -68,9 +68,7 @@ module Representable
       if value.nil?
         value = bin.definition.default
       end
-      if !value.nil?
-        bin.write(doc, value)
-      end
+      bin.write(doc, value)
     end
     doc
   end
