@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    representable (1.0.0)
+    representable (1.0.1)
       json
       nokogiri
 
@@ -16,7 +16,7 @@ GEM
     debugger-linecache (1.1.2)
       debugger-ruby_core_source (>= 1.1.1)
     debugger-ruby_core_source (1.1.3)
-    json (1.7.4)
+    json (1.8.0)
     metaclass (0.0.1)
     minitest (2.8.1)
     mocha (0.12.1)
