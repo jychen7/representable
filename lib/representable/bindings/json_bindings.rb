@@ -16,7 +16,7 @@ module Representable
 
     # Represents plain key-value.
     class TextBinding < Binding
-      def write(hash, value)
+      def write(hash, value, operation_mode=nil, operation_hash={})
         hash[definition.from] = value
       end
 
@@ -32,11 +32,11 @@ module Representable
       include Representable::Binding::Hooks # includes #create_object and #write_object.
       include Representable::Binding::Extend
 
-      def write(hash, object)
+      def write(hash, object, operation_mode=nil, operation_hash={})
         if definition.array?
-          hash[definition.from] = object.collect { |obj| serialize(obj) }
+          hash[definition.from] = object.collect { |obj| serialize(obj, operation_mode, operation_hash) }
         else
-          hash[definition.from] = serialize(object)
+          hash[definition.from] = serialize(object, operation_mode, operation_hash)
         end
       end
 
@@ -47,9 +47,15 @@ module Representable
       end
 
     private
-      def serialize(object)
+      def serialize(object, operation_mode, operation_hash)
         return nil if object.nil?
-        write_object(object).to_hash(:wrap => false)
+        options = {wrap: false}
+        if operation_mode == EXCEPT_MODE
+          options[:except] = operation_hash
+        elsif operation_mode == INCLUDE_MODE
+          options[:include] = operation_hash
+        end
+        write_object(object).to_hash(options)
       end
     end
   end

@@ -23,7 +23,7 @@ module Representable
     
     # Represents a tag attribute.
     class AttributeBinding < Binding
-      def write(xml, values)
+      def write(xml, values, operation_mode=nil, operation_hash={})
         xml[definition.from] = values.to_s
       end
 
@@ -36,7 +36,7 @@ module Representable
     
     # Represents text content in a tag. # FIXME: is this tested???
     class TextBinding < Binding
-      def write(xml, value)
+      def write(xml, value, operation_mode=nil, operation_hash={})
         if definition.array?
           value.each do |v|
             add(xml, definition.from, v)
@@ -66,7 +66,7 @@ module Representable
       include Representable::Binding::Extend
       
       # Adds the ref's markup to +xml+. 
-      def write(xml, object)
+      def write(xml, object, operation_mode=nil, operation_hash={})
         if definition.array?
           object.each do |item|
             write_entity(xml, item)

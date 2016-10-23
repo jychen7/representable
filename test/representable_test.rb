@@ -98,9 +98,9 @@ class RepresentableTest < MiniTest::Spec
 
       band = Bodyjar.new
       band.name = "Bodyjar"
-
-      assert_equal "{\"band\":{\"name\":\"Bodyjar\"}}", band.to_json
-      assert_xml_equal "<band><name>Bodyjar</name></band>", band.to_xml
+      band.street_cred = 1
+      assert_equal "{\"band\":{\"name\":\"Bodyjar\",\"street_cred\":1}}", band.to_json
+      assert_xml_equal "<band><name>Bodyjar</name><street_cred>1</street_cred></band>", band.to_xml
     end
 
     it "allows extending with different representers subsequentially" do
@@ -255,6 +255,34 @@ class RepresentableTest < MiniTest::Spec
     it "accepts :include option" do
       hash = @band.send(:create_representation_with, {}, {:include => [:groupies]}, Representable::JSON)
       assert_equal({"groupies"=>2}, hash)
+
+      hash = @band.send(:create_representation_with, {}, {:include => {groupies: nil}}, Representable::JSON)
+      assert_equal({"groupies"=>2}, hash)
+    end
+
+    describe "nested object" do
+      class Artist
+        include Representable::JSON
+        property :name
+        collection :bands, class: PopBand
+        attr_accessor :name, :bands
+      end
+      before do
+        @artist = Artist.new
+        @artist.name = "ABC"
+        @artist.bands = [@band]
+      end
+      it "compiles document for nexted objects" do
+        assert_equal({"name"=>"ABC", "bands" => [{"name"=>"No One's Choice", "groupies"=>2}]}, @artist.to_hash)
+      end
+      it "accepts nested :except option" do
+        # it will remove whole bands
+        assert_equal({"name"=>"ABC"}, @artist.to_hash(except: [bands: :name]))
+      end
+      it "accepts nested :include option" do
+        assert_equal({"bands" => [{"name"=>"No One's Choice", "groupies"=>2}]}, @artist.to_hash(include: [bands: [:name, :groupies]]))
+        assert_equal({"name"=>"ABC", "bands" => [{"groupies"=>2}]}, @artist.to_hash(include: [:name, bands: :groupies]))
+      end
     end
   end
 

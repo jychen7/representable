@@ -25,6 +25,10 @@ require 'representable/definition'
 #
 #   hero.extend(HeroRepresenter).to_json
 module Representable
+  NORMAL_MODE  = 0
+  EXCEPT_MODE  = 1
+  INCLUDE_MODE = 2
+
   def self.included(base)
     base.class_eval do
       extend ClassMethods
@@ -49,8 +53,9 @@ module Representable
 
   # Reads values from +doc+ and sets properties accordingly.
   def update_properties_from(doc, options, format, &block)
+    operation_mode, operation_hash = fetch_mode_from(options)
     representable_bindings_for(format).each do |bin|
-      next if skip_property?(bin, options)
+      next if (operation_mode != NORMAL_MODE) && skip_property?(bin, operation_mode, operation_hash)
 
       value = bin.read(doc) || bin.definition.default
       send(bin.definition.setter, value)
@@ -61,23 +66,68 @@ module Representable
   private
   # Compiles the document going through all properties.
   def create_representation_with(doc, options, format, &block)
+    operation_mode, operation_hash = fetch_mode_from(options)
     representable_bindings_for(format).each do |bin|
-      next if skip_property?(bin, options)
+      next if (operation_mode != NORMAL_MODE) && skip_property?(bin, operation_mode, operation_hash)
 
-      value = send(bin.definition.getter)
-      if value.nil?
-        value = bin.definition.default
-      end
-      bin.write(doc, value)
+      value = send(bin.definition.getter) || bin.definition.default
+      bin_operation_hash = operation_hash[bin.definition.name.to_sym] || {}
+      bin.write(doc, value, operation_mode, bin_operation_hash)
     end
     doc
   end
 
   # Checks and returns if the property should be included.
-  def skip_property?(binding, options)
-    return unless props = options[:except] || options[:include]
-    res = props.include?(binding.definition.name.to_sym)
-    options[:include] ? !res : res
+  def skip_property?(bin, operation_mode, operation_hash)
+    # return unless props = options[:except] || options[:include]
+    # res = props.include?(bin.definition.name.to_sym)
+    # options[:include] ? !res : res
+    exist_in_option_keys = operation_hash.keys.include?(bin.definition.name.to_sym)
+    operation_mode == EXCEPT_MODE ? exist_in_option_keys : !exist_in_option_keys
+  end
+
+  def fetch_mode_from(options)
+    # options = {include: [
+    #   :name,
+    #   {songs: [:name, :artist]}
+    # ]}
+    operation_mode = NORMAL_MODE
+    operation_hash = {}
+    if props = options[:except]
+      operation_mode = EXCEPT_MODE
+    elsif props = options[:include]
+      operation_mode = INCLUDE_MODE
+    end
+
+    if props
+      operation_hash = add_to_hash(operation_hash, props)
+    end
+    # operation_mode = INCLUDE_MODE
+    # operation_hash = {
+    #   name: nil,
+    #   songs: {
+    #     name: nil,
+    #     artist: nil
+    #   }
+    # }
+    [operation_mode, operation_hash]
+  end
+
+  def add_to_hash(operation_hash, props)
+    case props.class.name
+    when "Symbol"
+      operation_hash[props] = {}
+    when "Hash"
+      props.each do |key, value|
+        operation_hash[key] = {}
+        operation_hash[key] = add_to_hash(operation_hash[key], value)
+      end
+    when "Array"
+      props.each do |ele|
+        operation_hash = add_to_hash(operation_hash, ele)
+      end
+    end
+    operation_hash
   end
 
   def representable_attrs
